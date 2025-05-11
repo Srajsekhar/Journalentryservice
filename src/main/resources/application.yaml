@@ -1,0 +1,19 @@
+#spring.data.mongodb.uri=mongodb+srv://satlarajsekhar2001:NEsn5BNsRHScfwyx@cluster0.yhm8hti.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+#spring.data.mongodb.database=journaldb
+#spring.data.mongodb.auto-index-creation=true
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb+srv://satlarajsekhar2001:NEsn5BNsRHScfwyx@cluster0.yhm8hti.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+      database: journaldb
+      auto-index-creation: true
+
+##logging.pattern.console=%d{yyyy-MM-dd HH:mm:ss} - %msg%n
+#logging:
+#  level:
+#    net:
+#      engineeringdigest:
+#        journalApp: ERROR
+#  pattern:
+#    console: "%d{yyyy-MM-dd HH:mm:ss.SSS}  %-5level ${PID} --- [%15.15thread] %40.40logger{39} : %msg%n"
