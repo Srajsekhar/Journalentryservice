@@ -1,30 +1,48 @@
 package net.engineeringdigest.journalApp.controller;
 
 import net.engineeringdigest.journalApp.entity.Userentry;
+import net.engineeringdigest.journalApp.externalapi.WeatherResponse;
+import net.engineeringdigest.journalApp.service.RedisService;
 import net.engineeringdigest.journalApp.service.UserEntryService;
-import org.apache.catalina.User;
+import net.engineeringdigest.journalApp.service.WeatherService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/user")
 public class userEntryControllerV2 {
-
+    @Autowired
+    private WeatherService weatherService;
     @Autowired
     private UserEntryService userEntryService;
+    @Autowired
+    private RedisService redisService;
     @GetMapping
-    public ResponseEntity<?> getAll() {
+    public ResponseEntity<Map<String, Object>> getAll() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String user=authentication.getName();
         Userentry findbyname = userEntryService.findbyname(user);
-        return new ResponseEntity<>(findbyname, HttpStatus.OK);
+        if(findbyname==null){
+            return ResponseEntity.notFound().build();
+        }
+        WeatherResponse temperature = redisService.getvaluefromredis("Weather_city");
+        if (temperature == null) {
+            WeatherResponse currentWeather = weatherService.getCurrentWeather("Mumbai");
+            redisService.savetoredis("Weather_city", currentWeather);
+            temperature= currentWeather;
+        }
+        int temperature1 = temperature.getCurrent().getTemperature();
+        Map<String, Object> response = new HashMap<>();
+        response.put("userEntry", findbyname);
+        response.put("temperature", temperature1);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @PutMapping

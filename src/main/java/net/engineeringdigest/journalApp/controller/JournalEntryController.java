@@ -2,8 +2,11 @@ package net.engineeringdigest.journalApp.controller;
 
 import net.engineeringdigest.journalApp.entity.Journalentry;
 import net.engineeringdigest.journalApp.entity.Userentry;
+import net.engineeringdigest.journalApp.externalapi.WeatherResponse;
 import net.engineeringdigest.journalApp.service.JournalEntryService;
+import net.engineeringdigest.journalApp.service.RedisService;
 import net.engineeringdigest.journalApp.service.UserEntryService;
+import net.engineeringdigest.journalApp.service.WeatherService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,26 +15,47 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("/journal")
-public class JournalEntryControllerV2 {
-
+public class
+JournalEntryControllerV2 {
+    private WeatherService weatherService;
+    @Autowired
+    private RedisService redisService;
     @Autowired
     private JournalEntryService journalEntryService;
     @Autowired
     private UserEntryService userEntryService;
     @GetMapping
-    public ResponseEntity<List<Journalentry>> getAllUserEntries() {
+    public  ResponseEntity<Map<String, Object>>  getAllUserEntries() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String user=authentication.getName();
         Userentry findbyname = userEntryService.findbyname(user);
+        if (findbyname == null) {
+            return ResponseEntity.notFound().build();
+        }
+        WeatherResponse temperature = redisService.getvaluefromredis("Weather_city");
+
+        try {
+            WeatherResponse currentWeather = weatherService.getCurrentWeather("Mumbai");
+            redisService.savetoredis("Weather_city", currentWeather);
+            temperature = currentWeather;
+        }
+        catch (Exception e){
+            System.out.println("Error fetching weather data: " + e.getMessage());
+        }
         List<Journalentry> entries = findbyname.getJournalentries();
-        return ResponseEntity.ok(entries);
+        Map<String, Object> respone= new HashMap<>();
+        respone.put("username", entries);
+        respone.put("temperature",temperature.getCurrent().getTemperature());
+        return new ResponseEntity<>(respone, HttpStatus.OK);
     }
 
     @PostMapping
